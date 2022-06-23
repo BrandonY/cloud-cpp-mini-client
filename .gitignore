@@ -1,0 +1,4 @@
+bazel-out
+bazel-testlogs
+bazel-bin
+bazel-cloud-cpp-mini-client
