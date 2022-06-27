@@ -12,14 +12,32 @@ namespace gc = ::google::cloud;
 namespace gcs = gc::storage;
 namespace gcs_experimental = gc::storage_experimental;
 
+const char BUCKET_NAME[] = "gcs-grpc-team-perf-testing-us-central1";
+const char OBJECT_NAME[] = "writes/will_never_finalize";
+
 int main() {
 
-    for(int i=0; i<2; i++) {
-      GoogleStorageClient* client = CreateGCSClient(GRPC_NO_DIRECTPATH, "gcs-grpc-team-testing");
-      CallResult rr = ReadObject(client, "gcs-grpc-team-yarbrough-test-1", "test.txt");
-      std::cerr << "Bytes read: " << rr.bytes_received << std::endl;
-      std::cerr << "Status: " << rr.error_code << std::endl;
-      DestroyGCSClient(client);
+    // Works
+    // GoogleStorageClient* client = CreateGCSClient(GRPC_NO_DIRECTPATH, "gcs-grpc-team-testing");
+
+    // Does not work
+    GoogleStorageClient* client = CreateGCSClient(JSON, "gcs-grpc-team-testing");
+
+    CallResult start_write_result = StartResumableWrite(client, BUCKET_NAME, OBJECT_NAME);
+    if (!start_write_result.success) {
+      return 1;
     }
+
+    const char* upload_id = start_write_result.upload_id;
+    std::cerr << "Upload ID: '"<< upload_id << "'" << std::endl;
+
+    CallResult query_write_result = QueryWriteStatus(client, upload_id);
+    if (query_write_result.success) {
+      std::cerr << "Query succeeded";
+    } else {
+      std::cerr << "QueryWriteStatus failed: " << query_write_result.error_code << std::endl;
+    }
+    DestroyGCSClient(client);
+
     return 0;
 }
